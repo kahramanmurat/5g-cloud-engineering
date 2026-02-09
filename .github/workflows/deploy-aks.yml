@@ -1,30 +1,9 @@
-name: Deploy to AKS
-
-on:
-  push:
-    branches: [ "main" ]
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Set AKS context
-        uses: azure/aks-set-context@v4
-        with:
-          resource-group: rg-5g-cloud
-          cluster-name: aks-5g
-
-      - name: Deploy manifests
+      - name: Deploy manifests (clean)
         run: |
+          set -euo pipefail
+          kubectl get ns demo >/dev/null 2>&1 || kubectl create ns demo
+          kubectl -n demo delete -f k8s/manifests/ --ignore-not-found
           kubectl apply -f k8s/manifests/
-          kubectl -n demo rollout status deploy/web --timeout=120s
+          kubectl -n demo rollout status deploy/web --timeout=180s
           kubectl -n demo get pods -o wide
-          kubectl -n demo get svc
+          kubectl -n demo get svc -o wide
